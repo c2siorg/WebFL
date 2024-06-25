@@ -1,1 +1,7 @@
 Flask
+torch
+torchvision
+numpy
+tqdm
+scipy
+pickle
