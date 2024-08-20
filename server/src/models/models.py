@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 cfg = {
     'VGG11': [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -65,4 +66,15 @@ class LeNet5(nn.Module):
         x = self.relu3(self.fc1(x))
         x = self.relu4(self.fc2(x))
         x = self.fc3(x)
+        return x
+
+class ModelTrainer(nn.Module):
+    def __init__(self):
+        super(ModelTrainer, self).__init__()
+        self.fc1 = nn.Linear(10, 100)
+        self.fc2 = nn.Linear(100, 1)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
