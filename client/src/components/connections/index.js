@@ -1,7 +1,10 @@
 import { io } from "socket.io-client";
 import { createContext, useContext, useState, useEffect } from "react";
 import JSZip from 'jszip';
-import * as ort from 'onnxruntime-web/webgl';
+import * as ort from 'onnxruntime-web/training';
+
+ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/"; // Need to add otherwise the wasm path will be pointed to the file path which will not work due to restrictions on the browser
+
 
 const SocketContext = createContext();
 const SOCKET_SERVER_URL = "http://127.0.0.1:5000";
@@ -89,9 +92,7 @@ async function loadTrainingSession() {
     };
 
     try {
-        const session = await ort.TrainingSession.create(createOptions, {
-            executionProviders: ['webgl'] // Specify WebGPU as the execution provider
-        });
+        const session = await ort.TrainingSession.create(createOptions);
         return session;
     } catch (err) {
         console.log("Error loading the training session: " + err);
