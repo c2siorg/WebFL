@@ -52,21 +52,20 @@ def calculate_checksum(data):
     return hashlib.sha256(data).hexdigest()
 
 def aggregate_global_model(onnx_model, a_weights):
-    weights = torch.load(a_weights)
+    # a_weights is a numpy array of aggregated weights from all clients.
+    # Map each ONNX initializer by position to the corresponding averaged slice.
+    initializers = list(onnx_model.graph.initializer)
+    flat_offset = 0
 
-    onnx_weights = {}
-    for initializer in onnx_model.graph.initializer:
-        name = initializer.name
+    for initializer in initializers:
+        shape = [d for d in initializer.dims]
+        size = 1
+        for d in shape:
+            size *= d
 
-        if name in weights:
-            # Convert the PyTorch tensor to a numpy array
-            new_weight = weights[name].numpy()
-
-            # Update the initializer's data with the new weight
-            initializer.raw_data = numpy_helper.from_array(new_weight).raw_data
-
-            # Store the updated weight
-            onnx_weights[name] = new_weight
+        weight_slice = a_weights[flat_offset:flat_offset + size].reshape(shape).astype(np.float32)
+        initializer.raw_data = numpy_helper.from_array(weight_slice).raw_data
+        flat_offset += size
 
     return onnx_model
 
@@ -111,7 +110,7 @@ def handle_request_global_model(data):
 
     emit('global_model_from_server', payload)
 
-socketio.on('client_training_completed')
+@socketio.on('client_training_completed')
 def continue_training(data):
     global federation_round, client_federated_round_model_updates, client_federation_round_update_monitor, MAX_FEDERATION_ROUNDS, global_model
     print(f"Client has completed initial training")
@@ -137,7 +136,7 @@ def continue_training(data):
                 new_global_model = aggregate_global_model(global_onnx_model, global_model_weights)
                 federation_round += 1
                 save_new_global_model(new_global_model, federation_round)
-                payload = {weights: global_model_weights}
+                payload = {'weights': global_model_weights.tolist()}
                 emit('broadcast_global_model', {'data': payload}, broadcast=True, include_self=False)
             else:
                 print("Waiting for all clients to finish training")
