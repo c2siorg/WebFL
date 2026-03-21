@@ -59,3 +59,14 @@ This project is a web application built with React and a Python backend. The pro
     ```sh
     flask run
     ```
+
+### Backend Docker Runtime
+Build the server image from the repository root:
+```sh
+docker build -t webfl-server ./server
+```
+
+Run the server container locally:
+```sh
+docker run --rm -p 5000:5000 webfl-server
+```
